@@ -1,0 +1,48 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres_container
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: parol
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/db/data
+
+  migrate:
+    image: migrate/migrate
+    container_name: migrate_container
+    depends_on:
+      - postgres
+    volumes:
+      - ./migrations:/migrations
+    command: [
+      "-path", "./schema",
+      "-database", "postgres://postgres:parol@localhost:5432/postgres?sslmode=disable",
+      "up"
+    ]
+
+
+  url-shortener:
+    build: ./
+    container_name: url-shortener
+    restart: always
+    depends_on:
+      - postgres
+      - migrate
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: parol
+      DB_NAME: postgres
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres_data:
